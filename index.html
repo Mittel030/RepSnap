@@ -15,7 +15,7 @@
 
   <title>RepSnap</title>
   <link rel="icon"             type="image/svg+xml" href="favicon.svg" />
-  <link rel="apple-touch-icon"                      href="favicon.svg" />
+  <link rel="apple-touch-icon"                      href="icons/icon-512.php" />
   <link rel="manifest"                              href="manifest.json" />
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -167,5 +167,10 @@
   </div>
 
   <script type="module" src="js/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/Repsnap/sw.js', { scope: '/Repsnap/' });
+    }
+  </script>
 </body>
 </html>

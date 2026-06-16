@@ -99,32 +99,59 @@ export async function renderProfile(container, currentUserSession) {
         });
 
         document.getElementById('btn-edit')?.addEventListener('click', () => {
+            let uploadedAvatar = me.avatar || '';
             openModal(`
               <div class="px-5 pb-6">
                 <div class="flex items-center justify-between pt-2 pb-5">
                   <h2 class="text-[18px] font-black text-[#111827]">Profiel bewerken</h2>
                   <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
-                <form id="edit-form" class="flex flex-col gap-4" novalidate>
+                <div class="flex flex-col gap-4">
+                  <!-- Avatar picker -->
+                  <div class="flex flex-col items-center gap-3">
+                    <div class="relative">
+                      <img id="e-avatar-preview" src="${me.avatar||''}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;background:#F3F4F6;display:${me.avatar?'block':'none'};">
+                      <div id="e-avatar-initials" class="avatar-fallback" style="width:80px;height:80px;font-size:30px;display:${me.avatar?'none':'flex'};">${me.display_name.charAt(0).toUpperCase()}</div>
+                      <button id="e-avatar-btn" style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:#DC2626;border:2px solid white;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                        <svg style="width:13px;height:13px;" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                      </button>
+                    </div>
+                    <p id="e-avatar-status" class="text-[12px] text-[#9CA3AF]">Tik op + om foto te wijzigen</p>
+                  </div>
                   <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Weergavenaam</label>
                   <input id="e-name" type="text" value="${me.display_name}" class="rs-input" maxlength="60"/></div>
                   <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Bio <span class="normal-case text-[#9CA3AF] font-normal">(max 120)</span></label>
                   <textarea id="e-bio" rows="2" class="rs-input" maxlength="120">${me.bio||''}</textarea></div>
-                  <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Avatar URL <span class="normal-case text-[#9CA3AF] font-normal">(optioneel)</span></label>
-                  <input id="e-avatar" type="url" value="${me.avatar||''}" class="rs-input" placeholder="https://…"/></div>
-                  <button type="submit" id="e-sub" class="btn-primary">Opslaan</button>
-                </form>
+                  <button id="e-sub" class="btn-primary">Opslaan</button>
+                </div>
               </div>`, c => {
                 c.querySelector('#mc').addEventListener('click', closeModal);
-                c.querySelector('#edit-form').addEventListener('submit', async e => {
-                    e.preventDefault();
+
+                c.querySelector('#e-avatar-btn').addEventListener('click', async () => {
+                    const status = c.querySelector('#e-avatar-status');
+                    try {
+                        status.textContent = 'Uploaden…';
+                        const result = await mediaBottomSheet({ accept: 'image/*' });
+                        uploadedAvatar = result.url;
+                        const preview = c.querySelector('#e-avatar-preview');
+                        const initials = c.querySelector('#e-avatar-initials');
+                        preview.src = result.url;
+                        preview.style.display = 'block';
+                        initials.style.display = 'none';
+                        status.textContent = 'Foto gewijzigd ✓';
+                    } catch(e) {
+                        status.textContent = e.message !== 'Geannuleerd' ? e.message : 'Tik op + om foto te wijzigen';
+                    }
+                });
+
+                c.querySelector('#e-sub').addEventListener('click', async () => {
                     const sub = c.querySelector('#e-sub');
                     sub.disabled=true; sub.textContent='…';
                     try {
                         await auth.updateProfile({
                             displayName: c.querySelector('#e-name').value.trim() || me.display_name,
                             bio:         c.querySelector('#e-bio').value.trim(),
-                            avatar:      c.querySelector('#e-avatar').value.trim() || me.avatar,
+                            avatar:      uploadedAvatar,
                         });
                         closeModal();
                         showToast('Profiel opgeslagen ✓', 'success');

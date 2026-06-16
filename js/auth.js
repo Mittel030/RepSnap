@@ -1,55 +1,38 @@
-import { store } from './store.js';
-
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-
-function safe(user) {
-  if (!user) return null;
-  const { password: _, ...rest } = user;
-  return rest;
-}
+import { api, setToken } from './api.js';
 
 export const auth = {
-  signup(username, displayName, password) {
-    username    = (username    || '').trim();
-    displayName = (displayName || '').trim();
-    password    = (password    || '');
+    _user: null,
 
-    if (!username || !displayName || !password) throw new Error('Alle velden zijn verplicht.');
-    if (username.length < 3)  throw new Error('Gebruikersnaam moet minimaal 3 tekens zijn.');
-    if (!/^[a-z0-9_.]+$/i.test(username)) throw new Error('Gebruikersnaam mag alleen letters, cijfers, . en _ bevatten.');
-    if (password.length < 6)  throw new Error('Wachtwoord moet minimaal 6 tekens zijn.');
-    if (store.getUserByUsername(username)) throw new Error('Deze gebruikersnaam is al bezet.');
+    async init() {
+        if (!localStorage.getItem('rs_token')) return null;
+        try { this._user = await api.me(); return this._user; }
+        catch { setToken(null); this._user = null; return null; }
+    },
 
-    const user = {
-      id: uid(),
-      username: username.toLowerCase(),
-      displayName,
-      password,
-      bio: '',
-      avatar: `https://i.pravatar.cc/150?u=${username}`,
-      joinedAt: Date.now(),
-    };
-    store.addUser(user);
-    store.setCurrentUser(safe(user));
-    return safe(user);
-  },
+    async signup(username, displayName, password) {
+        const { token, user } = await api.signup(username, displayName, password);
+        setToken(token);
+        this._user = user;
+        return user;
+    },
 
-  login(username, password) {
-    const user = store.getUserByUsername((username||'').trim());
-    if (!user || user.password !== password) throw new Error('Gebruikersnaam of wachtwoord onjuist.');
-    store.setCurrentUser(safe(user));
-    return safe(user);
-  },
+    async login(username, password) {
+        const { token, user } = await api.login(username, password);
+        setToken(token);
+        this._user = user;
+        return user;
+    },
 
-  logout() { store.clearCurrentUser(); },
+    async logout() {
+        try { await api.logout(); } catch {}
+        setToken(null);
+        this._user = null;
+    },
 
-  getCurrentUser() { return store.getCurrentUser(); },
+    getCurrentUser() { return this._user; },
 
-  updateProfile(patch) {
-    const cur = store.getCurrentUser();
-    if (!cur) throw new Error('Niet ingelogd.');
-    const updated = store.updateUser(cur.id, patch);
-    store.setCurrentUser(safe(updated));
-    return safe(updated);
-  },
+    async updateProfile(patch) {
+        this._user = await api.updateProfile(patch);
+        return this._user;
+    },
 };

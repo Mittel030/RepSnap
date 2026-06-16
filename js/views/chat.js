@@ -1,6 +1,7 @@
-import { api }                   from '../api.js';
-import { avatar, timeAgo, showToast } from '../main.js';
-import { router }               from '../router.js';
+import { api }                         from '../api.js';
+import { avatar, timeAgo, showToast }   from '../main.js';
+import { mediaBottomSheet, mediaTag }   from '../media.js';
+import { startCall }                    from './call.js';
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -73,25 +74,24 @@ async function showConversationList(container, currentUser) {
     });
 }
 
-function chatThread(title, subtitle, messages, currentUser, onSend, onBack) {
+function msgBubble(m, currentUser) {
+    const isMe = m.sender_id === currentUser.id;
+    let media = '';
+    if (m.attachment) {
+        if (m.attach_type === 'video') {
+            media = `<div class="mt-1 rounded-xl overflow-hidden" style="max-width:220px;">${mediaTag(m.attachment,'video')}</div>`;
+        } else {
+            media = `<div class="mt-1 rounded-xl overflow-hidden" style="max-width:220px;"><img src="${m.attachment}" loading="lazy" style="width:100%;max-height:260px;object-fit:cover;" onerror="this.style.minHeight='80px';this.style.background='#F3F4F6';"></div>`;
+        }
+    }
     return `
-      <div class="flex flex-col" style="height:100vh;background:#F5F5F5;">
-        <!-- Header -->
-        <div class="flex items-center gap-3 px-4 py-3 bg-white border-b border-[#E5E7EB] flex-shrink-0">
-          <button id="thread-back" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-          </button>
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-[15px] text-[#111827] truncate">${esc(title)}</p>
-            ${subtitle ? `<p class="text-[12px] text-[#9CA3AF] truncate">${esc(subtitle)}</p>` : ''}
-          </div>
-        </div>
-        <!-- Messages -->
-        <div id="thread-msgs" class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"></div>
-        <!-- Input -->
-        <div class="border-t border-[#E5E7EB] px-4 py-3 flex gap-2 bg-white flex-shrink-0" style="padding-bottom:max(12px,env(safe-area-inset-bottom));">
-          <input id="thread-input" type="text" placeholder="Bericht…" class="rs-input flex-1" style="padding:10px 14px;" maxlength="500" autocomplete="off"/>
-          <button id="thread-send" class="btn-sm brand !rounded-xl px-4 !py-2">Stuur</button>
+      <div class="flex ${isMe?'justify-end':'justify-start'} gap-2 items-end">
+        ${!isMe ? `<div style="flex-shrink:0;">${avatar(m, 28)}</div>` : ''}
+        <div style="max-width:72%;">
+          ${!isMe ? `<p class="text-[10px] text-[#9CA3AF] font-semibold mb-0.5 ml-1">${esc(m.display_name)}</p>` : ''}
+          ${media}
+          ${m.content ? `<div class="px-3 py-2 rounded-2xl text-[14px] leading-snug ${isMe?'bg-[#DC2626] text-white rounded-br-sm':'bg-white text-[#111827] border border-[#E5E7EB] rounded-bl-sm'}" style="word-break:break-word;">${esc(m.content)}</div>` : ''}
+          <p class="text-[10px] text-[#9CA3AF] mt-0.5 mx-1 ${isMe?'text-right':'text-left'}">${timeAgo(m.created_at)}</p>
         </div>
       </div>`;
 }
@@ -100,24 +100,11 @@ function renderMsgs(messages, currentUser) {
     const box = document.getElementById('thread-msgs');
     if (!box) return;
     if (!messages.length) { box.innerHTML = `<div class="flex-1 flex items-center justify-center"><p class="text-[#9CA3AF] text-sm">Stuur het eerste bericht 👋</p></div>`; return; }
-    box.innerHTML = messages.map(m => {
-        const isMe = m.sender_id === currentUser.id;
-        return `
-          <div class="flex ${isMe?'justify-end':'justify-start'} gap-2 items-end">
-            ${!isMe ? `<div style="flex-shrink:0;">${avatar(m, 28)}</div>` : ''}
-            <div style="max-width:72%;">
-              ${!isMe ? `<p class="text-[10px] text-[#9CA3AF] font-semibold mb-0.5 ml-1">${esc(m.display_name)}</p>` : ''}
-              <div class="px-3 py-2 rounded-2xl text-[14px] leading-snug ${isMe?'bg-[#DC2626] text-white rounded-br-sm':'bg-white text-[#111827] border border-[#E5E7EB] rounded-bl-sm'}" style="word-break:break-word;">
-                ${esc(m.content)}
-              </div>
-              <p class="text-[10px] text-[#9CA3AF] mt-0.5 mx-1 ${isMe?'text-right':'text-left'}">${timeAgo(m.created_at)}</p>
-            </div>
-          </div>`;
-    }).join('');
+    box.innerHTML = messages.map(m => msgBubble(m, currentUser)).join('');
     box.scrollTop = box.scrollHeight;
 }
 
-function bindThread(currentUser, loadFn, sendFn) {
+function bindThread(currentUser, loadFn, sendFn, mediaBtn) {
     let messages = [];
     let polling;
 
@@ -135,43 +122,93 @@ function bindThread(currentUser, loadFn, sendFn) {
     polling = setInterval(refresh, 3000);
 
     const input = document.getElementById('thread-input');
-    async function send() {
-        const content = input?.value.trim();
-        if (!content) return;
-        input.value = '';
+
+    async function send(content = '', attachment = null, attachType = null) {
+        if (!content && !attachment) return;
+        const prev = input?.value;
+        if (input) input.value = '';
         try {
-            const msg = await sendFn(content);
+            const msg = await sendFn(content, attachment, attachType);
             messages.push(msg);
             renderMsgs(messages, currentUser);
-        } catch(e) { showToast(e.message, 'error'); }
+        } catch(e) {
+            if (input) input.value = prev || '';
+            showToast(e.message, 'error');
+        }
     }
 
-    document.getElementById('thread-send')?.addEventListener('click', send);
-    input?.addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); }});
+    document.getElementById('thread-send')?.addEventListener('click', () => send(input?.value.trim()));
+    input?.addEventListener('keydown', e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(input.value.trim()); }});
+
+    mediaBtn?.addEventListener('click', async () => {
+        try {
+            const result = await mediaBottomSheet({});
+            await send('', result.url, result.type);
+        } catch(e) {
+            if (e.message !== 'Geannuleerd') showToast(e.message, 'error');
+        }
+    });
 
     return () => clearInterval(polling);
 }
 
+function threadHTML(title, subtitle, extraHeaderBtn = '') {
+    return `
+      <div class="flex flex-col" style="height:100vh;background:#F5F5F5;">
+        <div class="flex items-center gap-3 px-4 py-3 bg-white border-b border-[#E5E7EB] flex-shrink-0">
+          <button id="thread-back" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-[15px] text-[#111827] truncate">${esc(title)}</p>
+            ${subtitle ? `<p class="text-[12px] text-[#9CA3AF] truncate">${esc(subtitle)}</p>` : ''}
+          </div>
+          ${extraHeaderBtn}
+        </div>
+        <div id="thread-msgs" class="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"></div>
+        <div class="border-t border-[#E5E7EB] px-3 py-3 flex gap-2 bg-white flex-shrink-0 items-center" style="padding-bottom:max(12px,env(safe-area-inset-bottom));">
+          <button id="thread-media" class="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#DC2626] hover:bg-red-50 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg>
+          </button>
+          <input id="thread-input" type="text" placeholder="Bericht…" class="rs-input flex-1" style="padding:10px 14px;" maxlength="500" autocomplete="off"/>
+          <button id="thread-send" class="btn-sm brand !rounded-xl px-4 !py-2">Stuur</button>
+        </div>
+      </div>`;
+}
+
 function openDMThread(container, currentUser, peerId, peerName, peerData, onBack) {
     const subtitle = peerData?.username ? '@' + peerData.username : '';
-    container.innerHTML = chatThread(peerName || peerId, subtitle, [], currentUser, null, onBack);
+    const callBtn = `
+      <button id="thread-call" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#DC2626] hover:bg-red-50 transition-all" title="Bellen">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+      </button>`;
 
+    container.innerHTML = threadHTML(peerName || peerId, subtitle, callBtn);
+
+    const mediaBtn = document.getElementById('thread-media');
     const stopPolling = bindThread(
         currentUser,
         () => api.getDMs(peerId),
-        (content) => api.sendDM(peerId, content)
+        (content, att, atType) => api.sendDM(peerId, content, att, atType),
+        mediaBtn
     );
+
+    document.getElementById('thread-call')?.addEventListener('click', () => {
+        startCall(peerId, peerData || { display_name: peerName, username: '' }, currentUser, true);
+    });
 
     document.getElementById('thread-back')?.addEventListener('click', () => { stopPolling(); onBack(); });
 }
 
 function openGroupThread(container, currentUser, groupId, groupName, onBack) {
-    container.innerHTML = chatThread(groupName, 'Groepschat', [], currentUser, null, onBack);
+    container.innerHTML = threadHTML(groupName, 'Groepschat');
 
+    const mediaBtn = document.getElementById('thread-media');
     const stopPolling = bindThread(
         currentUser,
         () => api.getGroupMessages(groupId),
-        (content) => api.sendGroupMessage(groupId, content)
+        (content, att, atType) => api.sendGroupMessage(groupId, content, att, atType),
+        mediaBtn
     );
 
     document.getElementById('thread-back')?.addEventListener('click', () => { stopPolling(); onBack(); });

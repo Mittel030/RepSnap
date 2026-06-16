@@ -1,11 +1,13 @@
-import { auth }           from './auth.js';
-import { router }         from './router.js';
-import { renderAuth }     from './views/auth.js';
-import { renderFeed }     from './views/feed.js';
-import { renderFriends }  from './views/friends.js';
-import { renderGroups }   from './views/groups.js';
-import { renderProfile }  from './views/profile.js';
-import { renderChat }     from './views/chat.js';
+import { auth }                           from './auth.js';
+import { router }                         from './router.js';
+import { renderAuth }                     from './views/auth.js';
+import { renderFeed }                     from './views/feed.js';
+import { renderFriends }                  from './views/friends.js';
+import { renderGroups }                   from './views/groups.js';
+import { renderProfile }                  from './views/profile.js';
+import { renderChat }                     from './views/chat.js';
+import { handleIncomingSignal, hasActiveCall } from './views/call.js';
+import { api }                            from './api.js';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 export function timeAgo(ts) {
@@ -116,10 +118,29 @@ router.register('profile', guard(async u => {
     await renderProfile(view, u);
 }));
 
+// ── Incoming call polling ─────────────────────────────────────────────────────
+function startCallPolling() {
+    let since = Date.now();
+    setInterval(async () => {
+        const currentUser = auth.getCurrentUser();
+        if (!currentUser) return;
+        try {
+            const signals = await api.getSignals(since);
+            for (const s of signals) {
+                since = Math.max(since, s.at + 1);
+                if (s.type === 'offer' || s.type === 'hangup') {
+                    await handleIncomingSignal(s, currentUser);
+                }
+            }
+        } catch {}
+    }, 2000);
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 (async () => {
     const user = await auth.init();
     if (!user) window.location.hash = 'auth';
     else if (!window.location.hash || window.location.hash === '#') window.location.hash = 'feed';
     router.init();
+    if (user) startCallPolling();
 })();

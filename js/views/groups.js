@@ -1,5 +1,6 @@
 import { api }                                             from '../api.js';
 import { openModal, closeModal, avatar, timeAgo, showToast } from '../main.js';
+import { mediaBottomSheet, mediaTag }                        from '../media.js';
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -111,7 +112,7 @@ async function groupDetail(container, groupId, currentUser, goBack) {
                           <p class="text-[12px] text-[#9CA3AF]">${timeAgo(p.created_at)}</p>
                         </div>
                       </div>
-                      <img src="${p.image}" alt="post" class="post-img" loading="lazy">
+                      ${p.media_type === 'video' ? mediaTag(p.image,'video','display:block;') : `<img src="${p.image}" alt="post" class="post-img" loading="lazy">`}
                       ${p.caption?`<p class="px-4 py-3 text-[14px] text-[#374151] leading-snug">${esc(p.caption)}</p>`:''}
                     </div>`).join('')
                 : `<div class="empty-state"><div class="empty-icon">📸</div><p class="font-bold text-[#111827]">Geen posts</p><p class="text-[#9CA3AF] text-sm">Wees de eerste!</p></div>`}
@@ -137,32 +138,56 @@ async function groupDetail(container, groupId, currentUser, goBack) {
         });
 
         document.getElementById('btn-add-gpost')?.addEventListener('click', () => {
+            let uploadedUrl = null, uploadedType = 'image';
             openModal(`
               <div class="px-5 pb-6">
                 <div class="flex items-center justify-between pt-2 pb-5">
                   <h2 class="text-[18px] font-black text-[#111827]">Post in ${group.name}</h2>
                   <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
-                <form id="gpost-form" class="flex flex-col gap-4" novalidate>
-                  <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Afbeelding URL</label>
-                  <input id="gpost-img" type="url" placeholder="https://…" class="rs-input" autocomplete="off"/></div>
-                  <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Caption</label>
-                  <textarea id="gpost-cap" rows="3" placeholder="Schrijf iets…" class="rs-input"></textarea></div>
+                <div class="flex flex-col gap-4">
+                  <button id="gpost-pick" class="w-full border-2 border-dashed border-[#E5E7EB] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#9CA3AF] hover:border-[#DC2626] hover:text-[#DC2626] transition-all" style="min-height:160px;">
+                    <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+                    <span class="text-[14px] font-semibold">Foto of video toevoegen</span>
+                  </button>
+                  <div id="gpost-preview" class="hidden rounded-2xl overflow-hidden bg-[#F3F4F6]" style="max-height:260px;"></div>
+                  <div id="gpost-progress" class="hidden"><div class="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden"><div id="gpost-bar" class="h-full bg-[#DC2626] rounded-full transition-all" style="width:0%"></div></div></div>
+                  <textarea id="gpost-cap" rows="2" placeholder="Caption…" class="rs-input"></textarea>
                   <div id="gpost-err" class="hidden bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-2xl px-4 py-3"></div>
-                  <button type="submit" id="gpost-sub" class="btn-primary">Posten</button>
-                </form>
+                  <button id="gpost-sub" class="btn-primary" disabled style="opacity:0.5;">Posten</button>
+                </div>
               </div>`, c => {
                 c.querySelector('#mc').addEventListener('click', closeModal);
-                c.querySelector('#gpost-form').addEventListener('submit', async e => {
-                    e.preventDefault();
-                    const img = c.querySelector('#gpost-img').value.trim();
+                c.querySelector('#gpost-pick').addEventListener('click', async () => {
+                    const err = c.querySelector('#gpost-err');
+                    err.classList.add('hidden');
+                    try {
+                        const result = await mediaBottomSheet({ onProgress: pct => {
+                            c.querySelector('#gpost-progress').classList.remove('hidden');
+                            c.querySelector('#gpost-bar').style.width = (pct*100)+'%';
+                        }});
+                        uploadedUrl = result.url; uploadedType = result.type;
+                        const preview = c.querySelector('#gpost-preview');
+                        preview.classList.remove('hidden');
+                        preview.innerHTML = result.type === 'video'
+                            ? `<video src="${result.url}" controls playsinline style="width:100%;max-height:220px;object-fit:cover;"></video>`
+                            : `<img src="${result.url}" style="width:100%;max-height:220px;object-fit:cover;">`;
+                        c.querySelector('#gpost-pick').style.display='none';
+                        c.querySelector('#gpost-progress').classList.add('hidden');
+                        const sub = c.querySelector('#gpost-sub'); sub.disabled=false; sub.style.opacity='1';
+                    } catch(e) {
+                        if (e.message !== 'Geannuleerd') { c.querySelector('#gpost-err').textContent=e.message; c.querySelector('#gpost-err').classList.remove('hidden'); }
+                        c.querySelector('#gpost-progress').classList.add('hidden');
+                    }
+                });
+                c.querySelector('#gpost-sub').addEventListener('click', async () => {
                     const cap = c.querySelector('#gpost-cap').value.trim();
                     const err = c.querySelector('#gpost-err');
                     const sub = c.querySelector('#gpost-sub');
-                    if (!img) { err.textContent='Voeg een afbeelding URL toe.'; err.classList.remove('hidden'); return; }
+                    if (!uploadedUrl) { err.textContent='Voeg eerst media toe.'; err.classList.remove('hidden'); return; }
                     sub.disabled=true; sub.textContent='…';
                     try {
-                        await api.addGroupPost(group.id, img, cap);
+                        await api.addGroupPost(group.id, uploadedUrl, cap, uploadedType);
                         closeModal();
                         showToast('Post toegevoegd 🔥', 'success');
                         posts = await api.getGroupPosts(group.id);

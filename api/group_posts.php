@@ -18,10 +18,11 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    $b       = body();
-    $groupId = $b['groupId'] ?? '';
-    $image   = trim($b['image'] ?? '');
-    $caption = trim($b['caption'] ?? '');
+    $b          = body();
+    $groupId    = $b['groupId']    ?? '';
+    $image      = trim($b['image']   ?? '');
+    $caption    = trim($b['caption'] ?? '');
+    $media_type = trim($b['media_type'] ?? 'image');
     if (!$groupId) err('groupId ontbreekt.');
     if (!$image)   err('Afbeelding URL is verplicht.');
 
@@ -30,8 +31,8 @@ if ($method === 'POST') {
     if (!$mem->fetch()) err('Geen toegang.', 403);
 
     $id = uid();
-    db()->prepare('INSERT INTO group_posts (id,group_id,user_id,image,caption,created_at) VALUES (?,?,?,?,?,?)')
-       ->execute([$id, $groupId, $uid, $image, $caption, ts()]);
+    db()->prepare('INSERT INTO group_posts (id,group_id,user_id,image,caption,media_type,created_at) VALUES (?,?,?,?,?,?,?)')
+       ->execute([$id, $groupId, $uid, $image, $caption, $media_type, ts()]);
 
     $s = db()->prepare('SELECT gp.*, u.username, u.display_name, u.avatar FROM group_posts gp JOIN users u ON u.id=gp.user_id WHERE gp.id=?');
     $s->execute([$id]);

@@ -26,13 +26,14 @@ if ($method === 'GET') {
 
 if ($method === 'POST') {
     $b = body();
-    $image   = trim($b['image'] ?? '');
-    $caption = trim($b['caption'] ?? '');
+    $image      = trim($b['image']      ?? '');
+    $caption    = trim($b['caption']    ?? '');
+    $media_type = trim($b['media_type'] ?? 'image');
     if (!$image) err('Afbeelding URL is verplicht.');
 
     $id = uid();
-    db()->prepare('INSERT INTO posts (id,user_id,image,caption,created_at) VALUES (?,?,?,?,?)')
-       ->execute([$id, $uid, $image, $caption, ts()]);
+    db()->prepare('INSERT INTO posts (id,user_id,image,caption,media_type,created_at) VALUES (?,?,?,?,?,?)')
+       ->execute([$id, $uid, $image, $caption, $media_type, ts()]);
 
     $s = db()->prepare('SELECT p.*, u.username, u.display_name, u.avatar, 0 AS like_count, 0 AS user_liked FROM posts p JOIN users u ON p.user_id=u.id WHERE p.id=?');
     $s->execute([$id]);

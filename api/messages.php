@@ -96,15 +96,17 @@ if ($method === 'POST') {
     if ($type === 'dm') {
         $to      = $b['toUserId'] ?? '';
         $content = trim($b['content'] ?? '');
-        if (!$to || !$content) err('toUserId en content zijn verplicht.');
+        $att     = $b['attachment']  ?? null;
+        $at_type = $b['attach_type'] ?? null;
+        if (!$to || (!$content && !$att)) err('toUserId en content/attachment zijn verplicht.');
 
         $fs = db()->prepare('SELECT 1 FROM friendships WHERE ((from_user=? AND to_user=?) OR (from_user=? AND to_user=?)) AND status="accepted"');
         $fs->execute([$uid, $to, $to, $uid]);
         if (!$fs->fetch()) err('Jullie zijn geen vrienden.');
 
         $id = uid();
-        db()->prepare('INSERT INTO messages (id,sender_id,recipient_id,content,created_at) VALUES (?,?,?,?,?)')
-           ->execute([$id, $uid, $to, $content, ts()]);
+        db()->prepare('INSERT INTO messages (id,sender_id,recipient_id,content,attachment,attach_type,created_at) VALUES (?,?,?,?,?,?,?)')
+           ->execute([$id, $uid, $to, $content, $att, $at_type, ts()]);
         $s = db()->prepare('SELECT m.*, u.username, u.display_name, u.avatar FROM messages m JOIN users u ON u.id=m.sender_id WHERE m.id=?');
         $s->execute([$id]);
         ok($s->fetch());
@@ -113,15 +115,17 @@ if ($method === 'POST') {
     if ($type === 'group') {
         $groupId = $b['groupId'] ?? '';
         $content = trim($b['content'] ?? '');
-        if (!$groupId || !$content) err('groupId en content zijn verplicht.');
+        $att     = $b['attachment']  ?? null;
+        $at_type = $b['attach_type'] ?? null;
+        if (!$groupId || (!$content && !$att)) err('groupId en content/attachment zijn verplicht.');
 
         $mem = db()->prepare('SELECT 1 FROM group_members WHERE group_id=? AND user_id=?');
         $mem->execute([$groupId, $uid]);
         if (!$mem->fetch()) err('Geen toegang.', 403);
 
         $id = uid();
-        db()->prepare('INSERT INTO messages (id,sender_id,group_id,content,created_at) VALUES (?,?,?,?,?)')
-           ->execute([$id, $uid, $groupId, $content, ts()]);
+        db()->prepare('INSERT INTO messages (id,sender_id,group_id,content,attachment,attach_type,created_at) VALUES (?,?,?,?,?,?,?)')
+           ->execute([$id, $uid, $groupId, $content, $att, $at_type, ts()]);
         $s = db()->prepare('SELECT m.*, u.username, u.display_name, u.avatar FROM messages m JOIN users u ON u.id=m.sender_id WHERE m.id=?');
         $s->execute([$id]);
         ok($s->fetch());

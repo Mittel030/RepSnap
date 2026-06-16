@@ -1,0 +1,5 @@
+repsnap.nl, www.repsnap.nl {
+    redir / /Repsnap/ 302
+    reverse_proxy apache:80
+    encode gzip
+}

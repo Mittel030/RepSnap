@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - apache
+
+  apache:
+    build: .
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html/Repsnap
+    depends_on:
+      - mysql_db
+
+  mysql_db:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootSecure2025!
+      MYSQL_DATABASE: repsnap
+      MYSQL_USER: repsnap
+      MYSQL_PASSWORD: repsnap123
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/setup.sql:/docker-entrypoint-initdb.d/setup.sql:ro
+
+volumes:
+  caddy_data:
+  caddy_config:
+  mysql_data:

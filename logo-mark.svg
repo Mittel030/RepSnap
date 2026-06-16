@@ -1,0 +1,13 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RepSnap">
+  <rect width="512" height="512" rx="116" fill="#16181D"/>
+  <circle cx="256" cy="256" r="150.0" fill="none" stroke="#FF4D2E" stroke-width="34.0"/>
+  <g fill="#FF4D2E">
+      <polygon points="360.00,256.00 308.00,346.07 258.79,295.90"/>
+      <polygon points="308.00,346.07 204.00,346.07 222.84,278.37"/>
+      <polygon points="204.00,346.07 152.00,256.00 220.05,238.47"/>
+      <polygon points="152.00,256.00 204.00,165.93 253.21,216.10"/>
+      <polygon points="204.00,165.93 308.00,165.93 289.16,233.63"/>
+      <polygon points="308.00,165.93 360.00,256.00 291.95,273.53"/>
+  </g>
+  <circle cx="256" cy="256" r="30.0" fill="#16181D"/>
+</svg>

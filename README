@@ -1,0 +1,66 @@
+# RepSnap
+
+A private gym social app for you and your friends — share workout and progress photos in a small, close-knit feed. Think Instagram, but just for the gym and just for your circle.
+
+> **Status:** Frontend prototype. Auth and data are faked with `localStorage`, so everything runs in the browser with no backend. Not built for real/shared use yet.
+
+## Features
+
+- **Accounts** — sign up and log in (stored locally on your device)
+- **Friends** — add friends and manage requests
+- **Groups** — create or join workout groups and share photos within them
+- **Feed** — an Instagram-style feed of gym photos from friends, just for fun
+- **Progress photos** — private photos on your profile to track changes over time
+- **Profile** — your stats and photo grid
+
+## Tech stack
+
+- HTML5
+- Tailwind CSS (Play CDN — no build step)
+- Vanilla JavaScript (ES6 modules)
+- `localStorage` for all data (no backend)
+
+## Project structure
+
+```
+gym-app/
+├── index.html              # SPA shell: header, nav, view mount point
+├── css/
+│   └── styles.css          # small custom layer over Tailwind
+├── js/
+│   ├── main.js             # entry point: boots the app, mounts the router
+│   ├── store.js            # single source of truth for localStorage
+│   ├── auth.js             # signup / login / logout / current user
+│   ├── router.js           # hash-based view switching
+│   └── views/
+│       ├── auth.js         # login + signup screen
+│       ├── feed.js         # gym photo feed
+│       ├── friends.js      # add / list friends
+│       ├── groups.js       # create / join groups + group detail
+│       └── profile.js      # progress photos + stats
+└── assets/                 # placeholder avatars / icons
+```
+
+## Running it
+
+The app uses ES6 modules, which browsers refuse to load over `file://`. You need a local server:
+
+1. Open the project in VS Code.
+2. Install the **Live Server** extension.
+3. Right-click `index.html` → **Open with Live Server**.
+
+Any static server works (`npx serve`, `python -m http.server`, etc.) — opening the HTML file directly will not.
+
+## Known limitations
+
+- **Local only.** Data lives in one browser on one device. There are no real accounts and nothing is shared between users — "friends" and "groups" are simulated.
+- **Photo storage is tiny.** `localStorage` caps around 5 MB and images are large, so only a handful of photos will fit. Fine for testing the flow, not for real use.
+- Clearing browser data wipes everything.
+
+## Roadmap
+
+Swap the `localStorage` layer for a real backend (e.g. Supabase) to get genuine accounts, friends, groups, and photo storage that work across devices. Because all storage goes through `store.js`, this is the main file that would change.
+
+
+## Design
+https://stitch.withgoogle.com/projects/2769993881271655277

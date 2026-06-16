@@ -1,0 +1,16 @@
+<svg viewBox="0 0 860 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RepSnap logo">
+  <rect width="860" height="220" rx="36" fill="#16181D"/>
+  <circle cx="110" cy="110" r="63.0" fill="none" stroke="#FF4D2E" stroke-width="14.28"/>
+  <g fill="#FF4D2E">
+      <polygon points="153.68,110.00 131.84,147.83 111.17,126.76"/>
+      <polygon points="131.84,147.83 88.16,147.83 96.07,119.39"/>
+      <polygon points="88.16,147.83 66.32,110.00 94.90,102.64"/>
+      <polygon points="66.32,110.00 88.16,72.17 108.83,93.24"/>
+      <polygon points="88.16,72.17 131.84,72.17 123.93,100.61"/>
+      <polygon points="131.84,72.17 153.68,110.00 125.10,117.36"/>
+  </g>
+  <circle cx="110" cy="110" r="12.6" fill="#16181D"/>
+  <text x="228" y="148" font-family="Archivo, sans-serif" font-weight="900" font-size="104" letter-spacing="-3">
+    <tspan fill="#F4F2EC">Rep</tspan><tspan fill="#FF4D2E">Snap</tspan>
+  </text>
+</svg>

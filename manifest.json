@@ -1,0 +1,14 @@
+{
+  "name": "RepSnap",
+  "short_name": "RepSnap",
+  "description": "Private gym social app — share your gains with your crew.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16181D",
+  "theme_color": "#FF4D2E",
+  "categories": ["fitness", "social"],
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,5 +1,5 @@
-import { api }                                             from '../api.js';
-import { openModal, closeModal, avatar, timeAgo, showToast } from '../main.js';
+import { api }                                                          from '../api.js';
+import { openModal, closeModal, avatar, timeAgo, showToast, showConfirm } from '../main.js';
 import { mediaBottomSheet, mediaTag }                        from '../media.js';
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -10,7 +10,7 @@ function groupCard(group) {
         <div class="relative" style="height:130px;">
           ${group.cover
             ? `<img src="${group.cover}" alt="${group.name}" class="w-full h-full object-cover">`
-            : `<div class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,#F3F4F6,#E5E7EB);"><span style="font-size:40px;">💬</span></div>`}
+            : `<div class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,#F0EEEB,#E8E5E2);"><span style="font-size:40px;">💬</span></div>`}
           <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.6) 0%,transparent 55%)"></div>
           <div class="absolute bottom-3 left-4 right-4">
             <p class="font-black text-white text-[17px] leading-tight">${group.name}</p>
@@ -20,7 +20,7 @@ function groupCard(group) {
         <div class="px-4 py-3">
           ${group.description?`<p class="text-[#6B7280] text-[13px] leading-relaxed line-clamp-2 mb-2">${esc(group.description)}</p>`:''}
           <div class="flex items-center justify-between">
-            <span class="text-[12px] text-[#9CA3AF]">Code: <span class="font-mono font-bold text-[#DC2626] tracking-wider">${group.code}</span></span>
+            <span class="text-[12px] text-[#A8A29E]">Code: <span class="font-mono font-bold text-[#DC2626] tracking-wider">${group.code}</span></span>
           </div>
         </div>
       </div>`;
@@ -43,11 +43,11 @@ async function groupDetail(container, groupId, currentUser, goBack) {
 
     function renderDetail() {
         container.innerHTML = `
-          <div class="anim-fade pb-8" style="background:#F5F5F5;">
+          <div class="anim-fade pb-8" style="background:#F7F6F4;">
             <div class="relative" style="height:200px;">
               ${group.cover
                 ? `<img src="${group.cover}" alt="${group.name}" class="w-full h-full object-cover">`
-                : `<div class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,#F3F4F6,#E5E7EB);"><span style="font-size:56px;">💬</span></div>`}
+                : `<div class="w-full h-full flex items-center justify-center" style="background:linear-gradient(135deg,#F0EEEB,#E8E5E2);"><span style="font-size:56px;">💬</span></div>`}
               <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%)"></div>
               <button id="btn-back" class="absolute top-4 left-4 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 backdrop-blur text-white hover:bg-black/60 transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -58,20 +58,20 @@ async function groupDetail(container, groupId, currentUser, goBack) {
               </div>
             </div>
 
-            <div class="px-4 py-4 bg-white border-b border-[#F3F4F6]">
+            <div class="px-4 py-4 bg-white border-b border-[#EDEAE7]">
               ${group.description?`<p class="text-[#6B7280] text-[14px] leading-relaxed mb-4">${esc(group.description)}</p>`:''}
               <div class="flex gap-2 flex-wrap">
                 <button id="btn-leave" class="btn-sm ${isAdmin?'danger':'ghost'}">${isAdmin?'🗑 Verwijderen':'Verlaten'}</button>
               </div>
             </div>
 
-            <div class="px-4 py-4 bg-white border-b border-[#F3F4F6]">
-              <p class="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-3">Leden (${members.length})</p>
+            <div class="px-4 py-4 bg-white border-b border-[#EDEAE7]">
+              <p class="text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider mb-3">Leden (${members.length})</p>
               <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
                 ${members.map(m => `
                   <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
                     ${avatar(m, 46)}
-                    <span class="text-[10px] font-semibold text-[#9CA3AF] max-w-[52px] truncate">${m.username}</span>
+                    <span class="text-[10px] font-semibold text-[#A8A29E] max-w-[52px] truncate">${m.username}</span>
                     ${m.role==='admin'?`<span class="badge" style="font-size:9px;">admin</span>`:''}
                   </div>`).join('')}
               </div>
@@ -96,7 +96,7 @@ async function groupDetail(container, groupId, currentUser, goBack) {
             ${tab === 'posts' ? `
             <div>
               <div class="px-4 pt-4 pb-3 flex items-center justify-between">
-                <p class="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">Posts (${posts.length})</p>
+                <p class="text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider">Posts (${posts.length})</p>
                 <button id="btn-add-gpost" class="btn-sm brand flex items-center gap-1.5">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                   Post
@@ -104,18 +104,18 @@ async function groupDetail(container, groupId, currentUser, goBack) {
               </div>
               ${posts.length
                 ? posts.map(p => `
-                    <div class="bg-white border-b border-[#F3F4F6]">
+                    <div class="bg-white border-b border-[#EDEAE7]">
                       <div class="flex items-center gap-3 px-4 py-3">
                         ${avatar(p, 36)}
                         <div>
                           <p class="text-[14px] font-semibold text-[#111827]">${p.display_name}</p>
-                          <p class="text-[12px] text-[#9CA3AF]">${timeAgo(p.created_at)}</p>
+                          <p class="text-[12px] text-[#A8A29E]">${timeAgo(p.created_at)}</p>
                         </div>
                       </div>
                       ${p.media_type === 'video' ? mediaTag(p.image,'video','display:block;') : `<img src="${p.image}" alt="post" class="post-img" loading="lazy">`}
                       ${p.caption?`<p class="px-4 py-3 text-[14px] text-[#374151] leading-snug">${esc(p.caption)}</p>`:''}
                     </div>`).join('')
-                : `<div class="empty-state"><div class="empty-icon">📸</div><p class="font-bold text-[#111827]">Geen posts</p><p class="text-[#9CA3AF] text-sm">Wees de eerste!</p></div>`}
+                : `<div class="empty-state"><div class="empty-icon">📸</div><p class="font-bold text-[#111827]">Geen posts</p><p class="text-[#A8A29E] text-sm">Wees de eerste!</p></div>`}
             </div>` : ''}
 
             ${tab === 'chat' ? renderGroupChat(groupId, currentUser, members) : ''}
@@ -128,8 +128,10 @@ async function groupDetail(container, groupId, currentUser, goBack) {
         });
 
         document.getElementById('btn-leave')?.addEventListener('click', async () => {
-            const msg = isAdmin ? `Groep "${group.name}" permanent verwijderen?` : `Groep "${group.name}" verlaten?`;
-            if (!confirm(msg)) return;
+            const ok = await showConfirm(isAdmin
+                ? { title: `Groep verwijderen?`, body: `"${group.name}" wordt permanent verwijderd voor alle leden.`, confirm: 'Verwijderen' }
+                : { title: `Groep verlaten?`, body: `Je verlaat "${group.name}".`, confirm: 'Verlaten', destructive: false });
+            if (!ok) return;
             try {
                 isAdmin ? await api.deleteGroup(group.id) : await api.leaveGroup(group.id);
                 showToast(isAdmin ? 'Groep verwijderd' : 'Groep verlaten', 'info');
@@ -143,15 +145,15 @@ async function groupDetail(container, groupId, currentUser, goBack) {
               <div class="px-5 pb-6">
                 <div class="flex items-center justify-between pt-2 pb-5">
                   <h2 class="text-[18px] font-black text-[#111827]">Post in ${group.name}</h2>
-                  <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                  <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#A8A29E] hover:text-[#374151] hover:bg-[#F0EEEB] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <div class="flex flex-col gap-4">
-                  <button id="gpost-pick" class="w-full border-2 border-dashed border-[#E5E7EB] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#9CA3AF] hover:border-[#DC2626] hover:text-[#DC2626] transition-all" style="min-height:160px;">
+                  <button id="gpost-pick" class="w-full border-2 border-dashed border-[#E8E5E2] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#A8A29E] hover:border-[#DC2626] hover:text-[#DC2626] transition-all" style="min-height:160px;">
                     <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
                     <span class="text-[14px] font-semibold">Foto of video toevoegen</span>
                   </button>
-                  <div id="gpost-preview" class="hidden rounded-2xl overflow-hidden bg-[#F3F4F6]" style="max-height:260px;"></div>
-                  <div id="gpost-progress" class="hidden"><div class="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden"><div id="gpost-bar" class="h-full bg-[#DC2626] rounded-full transition-all" style="width:0%"></div></div></div>
+                  <div id="gpost-preview" class="hidden rounded-2xl overflow-hidden bg-[#F0EEEB]" style="max-height:260px;"></div>
+                  <div id="gpost-progress" class="hidden"><div class="h-1.5 bg-[#F0EEEB] rounded-full overflow-hidden"><div id="gpost-bar" class="h-full bg-[#DC2626] rounded-full transition-all" style="width:0%"></div></div></div>
                   <textarea id="gpost-cap" rows="2" placeholder="Caption…" class="rs-input"></textarea>
                   <div id="gpost-err" class="hidden bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-2xl px-4 py-3"></div>
                   <button id="gpost-sub" class="btn-primary" disabled style="opacity:0.5;">Posten</button>
@@ -207,7 +209,7 @@ function renderGroupChat(groupId, currentUser, members) {
     return `
       <div id="group-chat" class="flex flex-col" style="height:420px;">
         <div id="chat-msgs" class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"></div>
-        <div class="border-t border-[#E5E7EB] px-4 py-3 flex gap-2 bg-white">
+        <div class="px-4 py-3 flex gap-2 bg-white" style="border-top:1px solid #EDEAE7;">
           <input id="chat-input" type="text" placeholder="Bericht sturen…" class="rs-input flex-1" style="padding:10px 14px;" maxlength="500" autocomplete="off"/>
           <button id="chat-send" class="btn-sm brand !rounded-xl px-4">Stuur</button>
         </div>
@@ -237,11 +239,11 @@ function bindGroupChat(groupId, currentUser) {
               <div class="flex ${isMe?'justify-end':'justify-start'} gap-2 items-end">
                 ${!isMe ? `<div style="flex-shrink:0;">${avatar(m, 28)}</div>` : ''}
                 <div style="max-width:72%;">
-                  ${!isMe ? `<p class="text-[10px] text-[#9CA3AF] font-semibold mb-0.5 ml-1">${m.display_name}</p>` : ''}
-                  <div class="px-3 py-2 rounded-2xl text-[14px] leading-snug ${isMe?'bg-[#DC2626] text-white rounded-br-sm':'bg-white text-[#111827] border border-[#E5E7EB] rounded-bl-sm'}" style="word-break:break-word;">
+                  ${!isMe ? `<p class="text-[10px] text-[#A8A29E] font-semibold mb-0.5 ml-1">${m.display_name}</p>` : ''}
+                  <div class="px-3 py-2 rounded-2xl text-[14px] leading-snug ${isMe?'bg-[#DC2626] text-white rounded-br-sm':'bg-white text-[#111827] rounded-bl-sm'}" style="word-break:break-word;">
                     ${(m.content||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
                   </div>
-                  <p class="text-[10px] text-[#9CA3AF] mt-0.5 ${isMe?'text-right':'text-left'} mx-1">${timeAgo(m.created_at)}</p>
+                  <p class="text-[10px] text-[#A8A29E] mt-0.5 ${isMe?'text-right':'text-left'} mx-1">${timeAgo(m.created_at)}</p>
                 </div>
               </div>`;
         }).join('');
@@ -275,13 +277,13 @@ export async function renderGroups(container, currentUser) {
         catch {}
 
         container.innerHTML = `
-          <div class="anim-fade py-4 pb-8" style="background:#F5F5F5;">
+          <div class="anim-fade py-4 pb-8" style="background:#F7F6F4;">
             ${mine.length
-              ? `<p class="px-4 pb-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">Mijn groepen</p>
+              ? `<p class="px-4 pb-3 text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider">Mijn groepen</p>
                  ${mine.map(gr => groupCard(gr)).join('')}`
-              : `<div class="empty-state"><div class="empty-icon">💬</div><p class="font-bold text-[#111827] text-[17px]">Nog geen groepen</p><p class="text-[#9CA3AF] text-sm">Maak een groep aan of join er een via een code.</p></div>`}
+              : `<div class="empty-state"><div class="empty-icon">💬</div><p class="font-bold text-[#111827] text-[17px]">Nog geen groepen</p><p class="text-[#A8A29E] text-sm">Maak een groep aan of join er een via een code.</p></div>`}
 
-            <div class="mx-4 mt-2 p-4 bg-white border border-[#E5E7EB] rounded-2xl" style="box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <div class="mx-4 mt-2 p-4 inline-card">
               <p class="text-[14px] font-bold text-[#111827] mb-3">Groep joinen via code</p>
               <div class="flex gap-2">
                 <input id="join-code" type="text" placeholder="bijv. AB12CD" class="rs-input flex-1 font-mono uppercase tracking-widest" style="padding:11px 14px;font-size:15px;" maxlength="10"/>
@@ -291,7 +293,7 @@ export async function renderGroups(container, currentUser) {
             </div>
 
             ${others.length ? `
-            <p class="px-4 pt-6 pb-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider">Andere groepen</p>
+            <p class="px-4 pt-6 pb-3 text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider">Andere groepen</p>
             ${others.map(gr => groupCard(gr)).join('')}` : ''}
           </div>`;
 
@@ -320,16 +322,16 @@ renderGroups.openCreate = function(currentUser) {
       <div class="px-5 pb-6">
         <div class="flex items-center justify-between pt-2 pb-5">
           <h2 class="text-[18px] font-black text-[#111827]">Groep aanmaken</h2>
-          <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+          <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#A8A29E] hover:text-[#374151] hover:bg-[#F0EEEB] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form id="create-form" class="flex flex-col gap-4" novalidate>
-          <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Groepsnaam</label>
+          <div><label class="block text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider mb-1.5">Groepsnaam</label>
           <input id="g-name" type="text" placeholder="bijv. Gym Crew" class="rs-input" maxlength="60" autocomplete="off"/></div>
-          <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Beschrijving</label>
+          <div><label class="block text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider mb-1.5">Beschrijving</label>
           <textarea id="g-desc" rows="2" placeholder="Waar is de groep voor?" class="rs-input"></textarea></div>
-          <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Cover URL <span class="normal-case text-[#9CA3AF] font-normal">(optioneel)</span></label>
+          <div><label class="block text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider mb-1.5">Cover URL <span class="normal-case text-[#A8A29E] font-normal">(optioneel)</span></label>
           <input id="g-cover" type="url" placeholder="https://…" class="rs-input" autocomplete="off"/></div>
-          <p class="text-[12px] text-[#9CA3AF]">Er wordt automatisch een unieke uitnodigingscode aangemaakt.</p>
+          <p class="text-[12px] text-[#A8A29E]">Er wordt automatisch een unieke uitnodigingscode aangemaakt.</p>
           <div id="g-err" class="hidden bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-2xl px-4 py-3"></div>
           <button type="submit" id="g-sub" class="btn-primary">Groep aanmaken</button>
         </form>

@@ -1,18 +1,19 @@
-import { api }                                             from '../api.js';
-import { auth }                                           from '../auth.js';
-import { openModal, closeModal, avatar, timeAgo, showToast } from '../main.js';
+import { api }                                                          from '../api.js';
+import { auth }                                                         from '../auth.js';
+import { openModal, closeModal, avatar, timeAgo, showToast, showConfirm } from '../main.js';
 import { mediaBottomSheet }                               from '../media.js';
 
 export async function renderProfile(container, currentUserSession) {
     let tab = 'progress';
-    let posts = [], progress = [], me;
+    let posts = [], progress = [], friendships = [], me;
 
     async function load() {
         try {
-            [me, posts, progress] = await Promise.all([
+            [me, posts, progress, friendships] = await Promise.all([
                 api.me(),
                 api.getPosts(),
                 api.getProgress(),
+                api.getFriends(),
             ]);
             posts    = posts.filter(p => p.user_id === currentUserSession.id);
         } catch(e) { showToast(e.message, 'error'); }
@@ -24,22 +25,23 @@ export async function renderProfile(container, currentUserSession) {
         const joinDate = new Date(me.created_at).toLocaleDateString('nl-NL', { month:'long', year:'numeric' });
 
         container.innerHTML = `
-          <div class="anim-fade pb-10" style="background:#F5F5F5;">
-            <div class="px-4 pt-6 pb-5 bg-white border-b border-[#F3F4F6]">
+          <div class="anim-fade pb-10" style="background:#F7F6F4;">
+            <div class="px-4 pt-6 pb-5 bg-white" style="border-bottom:1px solid #EDEAE7;">
               <div class="flex items-start gap-4 mb-5">
                 <div class="relative flex-shrink-0">${avatar(me, 76)}</div>
                 <div class="flex-1 min-w-0 pt-1">
                   <p class="font-black text-[22px] leading-tight text-[#111827]">${me.display_name}</p>
-                  <p class="text-[#9CA3AF] text-[13px] mb-1">@${me.username}</p>
+                  <p class="text-[#A8A29E] text-[13px] mb-1">@${me.username}</p>
                   ${me.bio?`<p class="text-[#374151] text-[14px] leading-snug">${me.bio}</p>`:''}
-                  <p class="text-[#9CA3AF] text-[11px] mt-2 font-medium">Lid sinds ${joinDate}</p>
+                  <p class="text-[#A8A29E] text-[11px] mt-2 font-medium">Lid sinds ${joinDate}</p>
                 </div>
               </div>
-              <div class="grid grid-cols-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl divide-x divide-[#E5E7EB] mb-4">
+              <div class="grid grid-cols-3 rounded-2xl divide-x divide-[#EDEAE7] mb-4" style="background:#F7F6F4;border:1.5px solid #EDEAE7;">
                 ${[
-                  { label:'Posts',   val:posts.length,    icon:'📸' },
-                  { label:'Progress', val:progress.length, icon:'📷' },
-                ].map(s => `<div class="flex flex-col items-center py-4 gap-0.5"><span class="text-[22px] font-black text-[#111827]">${s.val}</span><span class="text-[11px] text-[#9CA3AF] font-semibold">${s.label}</span></div>`).join('')}
+                  { label:'Vrienden', val: friendships.filter(f=>f.status==='accepted').length },
+                  { label:'Posts',    val: posts.length },
+                  { label:'Progress', val: progress.length },
+                ].map(s => `<div class="flex flex-col items-center py-4 gap-0.5"><span class="text-[20px] font-black text-[#111827]">${s.val}</span><span class="text-[11px] text-[#A8A29E] font-semibold">${s.label}</span></div>`).join('')}
               </div>
               <button id="btn-edit" class="btn-secondary flex items-center justify-center gap-2 py-3">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -65,7 +67,7 @@ export async function renderProfile(container, currentUserSession) {
             <div class="pt-3">
               ${tab === 'progress' ? `
               <div class="px-4">
-                <button id="btn-add-progress" class="w-full border-2 border-dashed border-[#E5E7EB] rounded-2xl py-4 mb-4 flex items-center justify-center gap-2 text-[13px] font-semibold text-[#9CA3AF] hover:border-[#DC2626] hover:text-[#DC2626] transition-all active:scale-97">
+                <button id="btn-add-progress" class="w-full border-2 border-dashed border-[#E8E5E2] rounded-2xl py-4 mb-4 flex items-center justify-center gap-2 text-[13px] font-semibold text-[#A8A29E] hover:border-[#DC2626] hover:text-[#DC2626] transition-all active:scale-97">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
                   Progress foto toevoegen
                 </button>
@@ -85,12 +87,12 @@ export async function renderProfile(container, currentUserSession) {
                           </div>
                         </div>`).join('')}
                     </div>`
-                  : `<div class="empty-state"><div class="empty-icon">📷</div><p class="font-bold text-[#111827] text-[16px]">Nog geen progress foto's</p><p class="text-[#9CA3AF] text-sm">Leg je transformatie vast.</p></div>`}
+                  : `<div class="empty-state"><div class="empty-icon">📷</div><p class="font-bold text-[#111827] text-[16px]">Nog geen progress foto's</p><p class="text-[#A8A29E] text-sm">Leg je transformatie vast.</p></div>`}
               </div>` : ''}
 
               ${tab === 'posts' ? (posts.length
                 ? `<div class="photo-grid">${posts.map(p=>`<div class="photo-grid-item"><img src="${p.image}" alt="post" loading="lazy"></div>`).join('')}</div>`
-                : `<div class="empty-state"><div class="empty-icon">🏋️</div><p class="font-bold text-[#111827] text-[16px]">Nog geen posts</p><p class="text-[#9CA3AF] text-sm">Deel je eerste moment in de feed.</p></div>`) : ''}
+                : `<div class="empty-state"><div class="empty-icon">🏋️</div><p class="font-bold text-[#111827] text-[16px]">Nog geen posts</p><p class="text-[#A8A29E] text-sm">Deel je eerste moment in de feed.</p></div>`) : ''}
             </div>
           </div>`;
 
@@ -104,23 +106,23 @@ export async function renderProfile(container, currentUserSession) {
               <div class="px-5 pb-6">
                 <div class="flex items-center justify-between pt-2 pb-5">
                   <h2 class="text-[18px] font-black text-[#111827]">Profiel bewerken</h2>
-                  <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                  <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#A8A29E] hover:text-[#374151] hover:bg-[#F0EEEB] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <div class="flex flex-col gap-4">
                   <!-- Avatar picker -->
                   <div class="flex flex-col items-center gap-3">
                     <div class="relative">
-                      <img id="e-avatar-preview" src="${me.avatar||''}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;background:#F3F4F6;display:${me.avatar?'block':'none'};">
+                      <img id="e-avatar-preview" src="${me.avatar||''}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;background:#F0EEEB;display:${me.avatar?'block':'none'};">
                       <div id="e-avatar-initials" class="avatar-fallback" style="width:80px;height:80px;font-size:30px;display:${me.avatar?'none':'flex'};">${me.display_name.charAt(0).toUpperCase()}</div>
                       <button id="e-avatar-btn" style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:#DC2626;border:2px solid white;cursor:pointer;display:flex;align-items:center;justify-content:center;">
                         <svg style="width:13px;height:13px;" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
                       </button>
                     </div>
-                    <p id="e-avatar-status" class="text-[12px] text-[#9CA3AF]">Tik op + om foto te wijzigen</p>
+                    <p id="e-avatar-status" class="text-[12px] text-[#A8A29E]">Tik op + om foto te wijzigen</p>
                   </div>
-                  <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Weergavenaam</label>
+                  <div><label class="block text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider mb-1.5">Weergavenaam</label>
                   <input id="e-name" type="text" value="${me.display_name}" class="rs-input" maxlength="60"/></div>
-                  <div><label class="block text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1.5">Bio <span class="normal-case text-[#9CA3AF] font-normal">(max 120)</span></label>
+                  <div><label class="block text-[11px] font-bold text-[#A8A29E] uppercase tracking-wider mb-1.5">Bio <span class="normal-case text-[#A8A29E] font-normal">(max 120)</span></label>
                   <textarea id="e-bio" rows="2" class="rs-input" maxlength="120">${me.bio||''}</textarea></div>
                   <button id="e-sub" class="btn-primary">Opslaan</button>
                 </div>
@@ -167,16 +169,16 @@ export async function renderProfile(container, currentUserSession) {
               <div class="px-5 pb-6">
                 <div class="flex items-center justify-between pt-2 pb-5">
                   <h2 class="text-[18px] font-black text-[#111827]">Progress foto toevoegen</h2>
-                  <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                  <button id="mc" class="w-9 h-9 flex items-center justify-center rounded-full text-[#A8A29E] hover:text-[#374151] hover:bg-[#F0EEEB] transition-all"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <div class="flex flex-col gap-4">
-                  <button id="pp-pick" class="w-full border-2 border-dashed border-[#E5E7EB] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#9CA3AF] hover:border-[#DC2626] hover:text-[#DC2626] transition-all" style="min-height:160px;">
+                  <button id="pp-pick" class="w-full border-2 border-dashed border-[#E8E5E2] rounded-2xl flex flex-col items-center justify-center gap-2 text-[#A8A29E] hover:border-[#DC2626] hover:text-[#DC2626] transition-all" style="min-height:160px;">
                     <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
                     <span class="text-[14px] font-semibold">Foto kiezen</span>
                     <span class="text-[12px]">Galerie of camera</span>
                   </button>
-                  <div id="pp-preview" class="hidden rounded-2xl overflow-hidden bg-[#F3F4F6]" style="max-height:260px;"><img id="pp-prev-img" class="w-full object-cover" style="max-height:260px;" alt="preview"></div>
-                  <div id="pp-progress" class="hidden"><div class="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden"><div id="pp-bar" class="h-full bg-[#DC2626] rounded-full transition-all" style="width:0%"></div></div></div>
+                  <div id="pp-preview" class="hidden rounded-2xl overflow-hidden bg-[#F0EEEB]" style="max-height:260px;"><img id="pp-prev-img" class="w-full object-cover" style="max-height:260px;" alt="preview"></div>
+                  <div id="pp-progress" class="hidden"><div class="h-1.5 bg-[#F0EEEB] rounded-full overflow-hidden"><div id="pp-bar" class="h-full bg-[#DC2626] rounded-full transition-all" style="width:0%"></div></div></div>
                   <input id="pp-note" type="text" placeholder="Notitie, bijv. Week 8 💪" class="rs-input" maxlength="60"/>
                   <div id="pp-err" class="hidden bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-2xl px-4 py-3"></div>
                   <button id="pp-sub" class="btn-primary" disabled style="opacity:0.5;">Toevoegen</button>
@@ -222,7 +224,8 @@ export async function renderProfile(container, currentUserSession) {
         container.querySelectorAll('.del-progress').forEach(btn => {
             btn.addEventListener('click', async e => {
                 e.stopPropagation();
-                if (!confirm('Progress foto verwijderen?')) return;
+                const ok = await showConfirm({ title: 'Foto verwijderen?', body: 'Deze progress foto wordt permanent verwijderd.', confirm: 'Verwijderen' });
+                if (!ok) return;
                 try {
                     await api.deleteProgress(btn.dataset.id);
                     showToast('Foto verwijderd', 'info');

@@ -44,12 +44,35 @@ export function closeModal() {
     overlay.classList.add('hidden');
 }
 
+export function showConfirm({ title, body = '', confirm: confirmLabel = 'Bevestigen', destructive = true }) {
+    return new Promise(resolve => {
+        const overlay = document.getElementById('modal-overlay');
+        const content = document.getElementById('modal-content');
+        content.innerHTML = `
+          <div class="flex justify-center pt-3 pb-1"><div class="w-10 h-1 rounded-full bg-[#CCCAC7]"></div></div>
+          <div class="px-5 pt-4 pb-8">
+            <p class="text-[18px] font-black text-[#111827] mb-1">${title}</p>
+            ${body ? `<p class="text-[14px] text-[#6B7280] leading-snug mt-1">${body}</p>` : ''}
+            <div class="flex flex-col gap-2 mt-6">
+              <button id="sc-ok" class="btn-primary" style="${destructive ? 'background:#DC2626;box-shadow:0 4px 16px rgba(220,38,38,.28);' : ''}">${confirmLabel}</button>
+              <button id="sc-cancel" class="btn-secondary">Annuleren</button>
+            </div>
+          </div>`;
+        overlay.classList.remove('hidden');
+        overlay.classList.add('open');
+        const done = (val) => { closeModal(); resolve(val); };
+        content.querySelector('#sc-ok').addEventListener('click', () => done(true));
+        content.querySelector('#sc-cancel').addEventListener('click', () => done(false));
+        overlay.onclick = e => { if (e.target === overlay) done(false); };
+    });
+}
+
 export function showToast(msg, type = 'info') {
     document.getElementById('rs-toast')?.remove();
     const bg = { info:'#374151', success:'#166534', error:'#991B1B' }[type] || '#374151';
     const el = document.createElement('div');
     el.id = 'rs-toast';
-    el.style.cssText = `position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:${bg};color:white;padding:11px 20px;border-radius:14px;font-size:14px;font-weight:600;font-family:Inter,sans-serif;white-space:nowrap;z-index:9999;animation:slideUp .25s ease;box-shadow:0 4px 20px rgba(0,0,0,0.2);max-width:360px;text-align:center;`;
+    el.style.cssText = `position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:${bg};color:white;padding:11px 22px;border-radius:16px;font-size:14px;font-weight:600;font-family:Inter,sans-serif;white-space:nowrap;z-index:9999;animation:slideUp .25s ease;box-shadow:0 6px 24px rgba(0,0,0,0.18);max-width:360px;text-align:center;`;
     el.textContent = msg;
     document.body.appendChild(el);
     setTimeout(() => el?.remove(), 2800);

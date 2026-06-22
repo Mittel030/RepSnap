@@ -1,5 +1,5 @@
-import { api }                      from '../api.js';
-import { avatar, showToast }        from '../main.js';
+import { api }                              from '../api.js';
+import { avatar, showToast, showConfirm }  from '../main.js';
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -21,11 +21,11 @@ export async function renderFriends(container, currentUser) {
         const q        = query.trim().toLowerCase();
 
         container.innerHTML = `
-          <div class="anim-fade pb-8" style="background:#F5F5F5;">
+          <div class="anim-fade pb-8" style="background:#F7F6F4;">
 
-            <div class="p-4 bg-white border-b border-[#F3F4F6] sticky top-0 z-10">
+            <div class="p-4 bg-white sticky top-0 z-10" style="border-bottom:1px solid #EDEAE7;">
               <div class="search-wrap">
-                <svg class="w-4 h-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-[#A8A29E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
                 <input id="search-input" type="search" placeholder="Zoek gebruikers om toe te voegen…"
@@ -34,24 +34,24 @@ export async function renderFriends(container, currentUser) {
             </div>
 
             ${q.length >= 2 ? `
-            <div class="bg-white mt-3 mx-4 rounded-2xl border border-[#E5E7EB] overflow-hidden" style="box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <div class="inline-card mt-3 mx-4">
               <p class="section-label">Zoekresultaten</p>
               <div id="search-results">
                 ${searchResults.length
                   ? searchResults.map(u => userRow(u, friendships, currentUser)).join('<hr class="rs-divider mx-4">')
-                  : `<p class="text-center text-[#9CA3AF] text-sm py-6">Geen resultaten voor "<strong>${esc(q)}</strong>"</p>`}
+                  : `<p class="text-center text-[#A8A29E] text-sm py-6">Geen resultaten voor "<strong>${esc(q)}</strong>"</p>`}
               </div>
             </div>` : ''}
 
             ${pending.length ? `
-            <div class="bg-white mt-3 mx-4 rounded-2xl border border-[#E5E7EB] overflow-hidden" style="box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <div class="inline-card mt-3 mx-4">
               <p class="section-label flex items-center gap-2">Openstaande verzoeken <span class="badge">${pending.length}</span></p>
               ${pending.map(f => `
                 <div class="user-row">
                   ${avatar(f, 46)}
                   <div class="flex-1 min-w-0">
                     <p class="text-[14px] font-semibold text-[#111827] truncate">${f.display_name}</p>
-                    <p class="text-[12px] text-[#9CA3AF]">@${f.username}</p>
+                    <p class="text-[12px] text-[#A8A29E]">@${f.username}</p>
                   </div>
                   <div class="flex items-center gap-2">
                     <button class="btn-sm brand accept-req" data-id="${f.friendship_id}">Accepteren</button>
@@ -62,7 +62,7 @@ export async function renderFriends(container, currentUser) {
                 </div>`).join('<hr class="rs-divider mx-4">')}
             </div>` : ''}
 
-            <div class="bg-white mt-3 mx-4 rounded-2xl border border-[#E5E7EB] overflow-hidden" style="box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <div class="inline-card mt-3 mx-4">
               <p class="section-label flex items-center gap-2">Vrienden ${accepted.length?`<span class="text-[#111827] font-bold normal-case text-[12px] tracking-normal">${accepted.length}</span>`:''}
               </p>
               ${accepted.length
@@ -72,11 +72,11 @@ export async function renderFriends(container, currentUser) {
                       ${avatar(f, 46)}
                       <div class="flex-1 min-w-0">
                         <p class="text-[14px] font-semibold text-[#111827] truncate">${f.display_name}</p>
-                        <p class="text-[12px] text-[#9CA3AF] truncate">@${f.username}${f.bio?` · ${f.bio.slice(0,28)}`:''}</p>
+                        <p class="text-[12px] text-[#A8A29E] truncate">@${f.username}${f.bio?` · ${f.bio.slice(0,28)}`:''}</p>
                       </div>
                       <button class="btn-sm ghost remove-friend" data-id="${f.friendship_id}">Verwijderen</button>
                     </div>`).join('')
-                : `<div class="empty-state" style="padding:40px 24px;"><div class="empty-icon">👥</div><p class="font-bold text-[16px] text-[#111827]">Nog geen vrienden</p><p class="text-[#9CA3AF] text-sm">Zoek hierboven en stuur een verzoek.</p></div>`
+                : `<div class="empty-state" style="padding:40px 24px;"><div class="empty-icon">👥</div><p class="font-bold text-[16px] text-[#111827]">Nog geen vrienden</p><p class="text-[#A8A29E] text-sm">Zoek hierboven en stuur een verzoek.</p></div>`
               }
             </div>
           </div>`;
@@ -126,7 +126,8 @@ export async function renderFriends(container, currentUser) {
 
         container.querySelectorAll('.remove-friend').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (!confirm('Vriend verwijderen?')) return;
+                const ok = await showConfirm({ title: 'Vriend verwijderen?', body: 'Jullie posts verdwijnen uit elkaars feed.', confirm: 'Verwijderen' });
+                if (!ok) return;
                 try {
                     await api.removeFriend(btn.dataset.id);
                     showToast('Vriend verwijderd', 'info');
@@ -149,11 +150,11 @@ function userRow(user, friendships, currentUser) {
     if (areFriends) {
         btn = `<span class="btn-sm ghost flex items-center gap-1"><svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Vrienden</span>`;
     } else if (sent) {
-        btn = `<span class="text-[12px] font-semibold text-[#9CA3AF] px-3 py-1.5 bg-[#F3F4F6] rounded-xl border border-[#E5E7EB]">Aangevraagd</span>`;
+        btn = `<span class="text-[12px] font-semibold text-[#A8A29E] px-3 py-1.5 bg-[#F0EEEB] rounded-xl border border-[#E8E5E2]">Aangevraagd</span>`;
     } else if (recv) {
         btn = `<button class="btn-sm brand accept-req" data-id="${recv.friendship_id}">Accepteren</button>`;
     } else {
         btn = `<button class="btn-sm brand send-req" data-username="${user.username}">+ Toevoegen</button>`;
     }
-    return `<div class="user-row">${avatar(user,46)}<div class="flex-1 min-w-0"><p class="text-[14px] font-semibold text-[#111827] truncate">${user.display_name}</p><p class="text-[12px] text-[#9CA3AF] truncate">@${user.username}${user.bio?` · ${user.bio.slice(0,24)}`:''}</p></div>${btn}</div>`;
+    return `<div class="user-row">${avatar(user,46)}<div class="flex-1 min-w-0"><p class="text-[14px] font-semibold text-[#111827] truncate">${user.display_name}</p><p class="text-[12px] text-[#A8A29E] truncate">@${user.username}${user.bio?` · ${user.bio.slice(0,24)}`:''}</p></div>${btn}</div>`;
 }

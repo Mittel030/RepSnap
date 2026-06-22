@@ -18,7 +18,7 @@ if ($ex->fetch()) {
     db()->prepare('DELETE FROM likes WHERE post_id=? AND user_id=?')->execute([$postId, $uid]);
     $liked = false;
 } else {
-    db()->prepare('INSERT INTO likes (post_id,user_id) VALUES (?,?)')->execute([$postId, $uid]);
+    db()->prepare('INSERT INTO likes (id,post_id,user_id,created_at) VALUES (?,?,?,?)')->execute([uid(), $postId, $uid, ts()]);
     $liked = true;
 }
 

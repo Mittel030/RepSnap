@@ -31,7 +31,7 @@ if ($method === 'POST') {
         $avatar = "https://i.pravatar.cc/150?u={$username}";
         $now  = ts();
 
-        db()->prepare('INSERT INTO users (id,username,display_name,password_hash,bio,avatar,created_at) VALUES (?,?,?,?,?,?,?)')
+        db()->prepare('INSERT INTO users (id,username,display_name,password,bio,avatar,created_at) VALUES (?,?,?,?,?,?,?)')
            ->execute([$id, $username, $displayName, $hash, '', $avatar, $now]);
 
         $token = bin2hex(random_bytes(32));
@@ -45,10 +45,10 @@ if ($method === 'POST') {
         $username = strtolower(trim($b['username'] ?? ''));
         $password = $b['password'] ?? '';
 
-        $s = db()->prepare('SELECT id, password_hash FROM users WHERE username=?');
+        $s = db()->prepare('SELECT id, password FROM users WHERE username=?');
         $s->execute([$username]);
         $row = $s->fetch();
-        if (!$row || !password_verify($password, $row['password_hash'])) err('Gebruikersnaam of wachtwoord onjuist.');
+        if (!$row || !password_verify($password, $row['password'])) err('Gebruikersnaam of wachtwoord onjuist.');
 
         $token = bin2hex(random_bytes(32));
         db()->prepare('INSERT INTO sessions (token,user_id,expires_at) VALUES (?,?,?)')

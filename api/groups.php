@@ -41,8 +41,8 @@ if ($method === 'POST') {
         $ex->execute([$group['id'], $uid]);
         if ($ex->fetch()) err('Je bent al lid van deze groep.');
 
-        db()->prepare('INSERT INTO group_members (group_id,user_id,role,joined_at) VALUES (?,?,?,?)')
-           ->execute([$group['id'], $uid, 'member', ts()]);
+        db()->prepare('INSERT INTO group_members (id,group_id,user_id,role,joined_at) VALUES (?,?,?,?,?)')
+           ->execute([uid(), $group['id'], $uid, 'member', ts()]);
         ok($group);
     }
 
@@ -56,8 +56,8 @@ if ($method === 'POST') {
     $id = uid();
     db()->prepare('INSERT INTO grps (id,name,description,cover,code,created_by,created_at) VALUES (?,?,?,?,?,?,?)')
        ->execute([$id, $name, $desc, $cover, $genCode, $uid, ts()]);
-    db()->prepare('INSERT INTO group_members (group_id,user_id,role,joined_at) VALUES (?,?,?,?)')
-       ->execute([$id, $uid, 'admin', ts()]);
+    db()->prepare('INSERT INTO group_members (id,group_id,user_id,role,joined_at) VALUES (?,?,?,?,?)')
+       ->execute([uid(), $id, $uid, 'admin', ts()]);
 
     $g = db()->prepare('SELECT *, 1 AS member_count FROM grps WHERE id=?');
     $g->execute([$id]);
